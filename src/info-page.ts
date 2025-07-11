@@ -195,11 +195,26 @@ export function renderPage(info: ServiceInfo) {
   <link rel="stylesheet" href="/res/css/sakura-dark.css"
         media="screen and (prefers-color-scheme: dark)" />
   <style>
-    body{font-family:sans-serif;padding:1em;max-width:900px;margin:0;}
-    .self-service-links{display:flex;justify-content:center;margin-bottom:1em;
-                        padding:0.5em;font-size:0.8em;}
-    .self-service-links a{margin:0 0.5em;}
-  </style>
+      body {
+        background-image: url('https://freeimghost.net/images/2025/06/23/1749309700286755-1.png');
+        font-family: sans-serif;
+        padding: 1em;
+        max-width: 900px;
+        margin: 0;
+      }
+      
+      .self-service-links {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1em;
+        padding: 0.5em;
+        font-size: 0.8em;
+      }
+      
+      .self-service-links a {
+        margin: 0 0.5em;
+      }
+    </style>
 </head>
 <body>
   ${headerHtml}

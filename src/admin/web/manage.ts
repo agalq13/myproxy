@@ -205,11 +205,14 @@ router.post("/import-users", upload.single("users"), (req, res) => {
           };
         } else if (typeof value === 'object' && value !== null) {
           // New format or partially new format
-          transformedTokenCounts[family] = {
+          const transformedCounts: { input: number; output: number; legacy_total?: number } = {
             input: (value as any).input || 0,
-            output: (value as any).output || 0,
-            legacy_total: (value as any).legacy_total
+            output: (value as any).output || 0
           };
+          if ((value as any).legacy_total !== undefined) {
+            transformedCounts.legacy_total = (value as any).legacy_total;
+          }
+          transformedTokenCounts[family] = transformedCounts;
         }
       }
       user.tokenCounts = transformedTokenCounts;
@@ -608,7 +611,7 @@ router.post("/generate-stats", (req, res) => {
 function getSumsForUser(user: User) {
   const sums = MODEL_FAMILIES.reduce(
     (s, model) => {
-      const counts = user.tokenCounts[model] ?? { input: 0, output: 0, legacy_total: undefined };
+      const counts = user.tokenCounts[model] ?? { input: 0, output: 0 };
       // Ensure inputTokens and outputTokens are numbers, defaulting to 0 if NaN or undefined
       const inputTokens = Number(counts.input) || 0;
       const outputTokens = Number(counts.output) || 0;

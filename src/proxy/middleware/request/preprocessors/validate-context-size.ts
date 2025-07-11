@@ -7,7 +7,7 @@ import { RequestPreprocessor } from "../index";
 const CLAUDE_MAX_CONTEXT = config.maxContextTokensAnthropic;
 const OPENAI_MAX_CONTEXT = config.maxContextTokensOpenAI;
 // todo: make configurable
-const GOOGLE_AI_MAX_CONTEXT = 2048000;
+const GOOGLE_AI_MAX_CONTEXT = 84000;
 const MISTRAL_AI_MAX_CONTENT = 131072;
 
 /**
@@ -125,6 +125,8 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 100000;
   } else if (model.match(/^deepseek/)) {
     modelMax = 64000;
+  } else if (model.match(/^grok-4/)) {
+    modelMax = 256000;
   } else if (model.match(/^grok/)) {
     modelMax = 128000;
   } else if (model.match(/command-a-03-202[0-9]/)) {

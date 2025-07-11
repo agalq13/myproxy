@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import dotenv from "dotenv";
 import type firebase from "firebase-admin";
+import fs from "fs";
 import path from "path";
 import pino from "pino";
 import type { LLMService, ModelFamily } from "./shared/models";
@@ -29,6 +30,15 @@ type Config = {
    * same but the APIs are different. Vertex is the GCP product for enterprise.
    **/
   googleAIKey?: string;
+  /**
+   * Comma-delimited list of Google AI experimental model names that are
+   * allowed to bypass the experimental model block. By default, all models
+   * containing "exp" are blocked, but specific models listed here will be
+   * permitted.
+   * 
+   * @example "gemini-2.0-flash-exp,gemini-exp-1206"
+   */
+  allowedExpModels?: string;
   /**
    * Comma-delimited list of Mistral AI API keys.
    */
@@ -431,6 +441,9 @@ type Config = {
      */
     proxyUrl?: string;
   };
+  GEOBLOCK_ENABLED?: boolean;
+  GEOBLOCK_ALLOWED_COUNTRIES?: string[];
+  GEOBLOCK_DB_PATH?: string;
   /** URL for the image on the login page. Defaults to empty string (no image). */
   loginImageUrl?: string;
   /** Whether to enable the token-based login page for the service info page. Defaults to true. */
@@ -450,6 +463,7 @@ export const config: Config = {
   anthropicKey: getEnvWithDefault("ANTHROPIC_KEY", ""),
   qwenKey: getEnvWithDefault("QWEN_KEY", ""),
   googleAIKey: getEnvWithDefault("GOOGLE_AI_KEY", ""),
+  allowedExpModels: getEnvWithDefault("ALLOWED_EXP_MODELS", ""),
   mistralAIKey: getEnvWithDefault("MISTRAL_AI_KEY", ""),
   deepseekKey: getEnvWithDefault("DEEPSEEK_KEY", ""),
   xaiKey: getEnvWithDefault("XAI_KEY", ""),
@@ -556,8 +570,13 @@ export const config: Config = {
     interface: getEnvWithDefault("HTTP_AGENT_INTERFACE", undefined),
     proxyUrl: getEnvWithDefault("HTTP_AGENT_PROXY_URL", undefined),
   },
+  GEOBLOCK_ENABLED: getEnvWithDefault("GEOBLOCK_ENABLED", false),
+  GEOBLOCK_ALLOWED_COUNTRIES: parseCsv(
+    getEnvWithDefault("GEOBLOCK_ALLOWED_COUNTRIES", "RU")
+  ),
+  GEOBLOCK_DB_PATH: getEnvWithDefault("GEOBLOCK_DB_PATH", undefined),
   loginImageUrl: getEnvWithDefault("LOGIN_IMAGE_URL", ""),
-  enableInfoPageLogin: getEnvWithDefault("ENABLE_INFO_PAGE_LOGIN", true),
+  enableInfoPageLogin: getEnvWithDefault("ENABLE_INFO_PAGE_LOGIN", false),
   serviceInfoAuthMode: getEnvWithDefault("SERVICE_INFO_AUTH_MODE", "token") as Config["serviceInfoAuthMode"],
   serviceInfoPassword: getEnvWithDefault("SERVICE_INFO_PASSWORD", undefined),
 } as const;
@@ -738,6 +757,7 @@ export async function assertConfigIsValid() {
 export const SENSITIVE_KEYS: (keyof Config)[] = [
   "googleSheetsSpreadsheetId",
   "httpAgent",
+  "GEOBLOCK_DB_PATH",
 ];
 
 /**

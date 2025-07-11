@@ -235,12 +235,29 @@ function maybeReassignModel(req: Request) {
  * This function is intended to be used as a RequestPreprocessor.
  * It throws an error if an experimental model is detected, which should be
  * caught by the proxy's onError handler.
+ * 
+ * Models can be allowed through the ALLOWED_EXP_MODELS environment variable.
  */
 function checkAndBlockExperimentalModels(req: Request) { // Changed signature
   const modelId = req.body.model as string | undefined;
 
   // Check if the model ID contains "exp" (case-insensitive)
   if (modelId && modelId.toLowerCase().includes("exp")) {
+    // Check if this specific model is in the allowlist
+    const allowedModels = config.allowedExpModels
+      ?.split(",")
+      .map(model => model.trim())
+      .filter(model => model.length > 0) || [];
+    
+    const isAllowed = allowedModels.some(allowedModel => 
+      modelId.toLowerCase() === allowedModel.toLowerCase()
+    );
+    
+    if (isAllowed) {
+      req.log.info({ modelId }, "Allowing experimental Google AI model via allowlist.");
+      return; // Allow the request to proceed
+    }
+    
     req.log.warn({ modelId }, "Blocking request to experimental Google AI model.");
     const err: any = new Error("Experimental models are too unstable to be supported in proxy code. Please use preview models instead.");
     err.statusCode = 400;

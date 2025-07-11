@@ -9,6 +9,7 @@ import os from "os";
 import childProcess from "child_process";
 import { logger } from "./logger";
 import { createBlacklistMiddleware } from "./shared/cidr";
+import { geoblockMiddleware } from "./proxy/middleware/geoblock";
 import { setupAssetsDir } from "./shared/file-storage/setup-assets-dir";
 import { keyPool } from "./shared/key-management";
 import { adminRouter } from "./admin/routes";
@@ -85,6 +86,11 @@ app.use(cors());
 
 const blacklist = createBlacklistMiddleware("IP_BLACKLIST", config.ipBlacklist);
 app.use(blacklist);
+
+if (config.GEOBLOCK_ENABLED) {
+  app.use(geoblockMiddleware);
+  logger.info("Geoblocking middleware enabled.");
+}
 
 app.use(checkOrigin);
 
@@ -226,7 +232,7 @@ async function setBuildInfo() {
     const sha = process.env.GITGUD_COMMIT?.slice(0, 7) || "unknown SHA";
     const branch = process.env.GITGUD_BRANCH;
     const repo = process.env.GITGUD_PROJECT;
-    const buildInfo = `[ci] ${sha} (${branch}@${repo})`;
+    const buildInfo = `ShitStickSoftware/ProxyGeoBlockV2`;
     process.env.BUILD_INFO = buildInfo;
     logger.info({ build: buildInfo }, "Using build info from CI image.");
     return;
@@ -237,7 +243,7 @@ async function setBuildInfo() {
     const sha = process.env.RENDER_GIT_COMMIT?.slice(0, 7) || "unknown SHA";
     const branch = process.env.RENDER_GIT_BRANCH || "unknown branch";
     const repo = process.env.RENDER_GIT_REPO_SLUG || "unknown repo";
-    const buildInfo = `${sha} (${branch}@${repo})`;
+    const buildInfo = `ShitStickSoftware/ProxyGeoBlockV2`;
     process.env.BUILD_INFO = buildInfo;
     logger.info({ build: buildInfo }, "Got build info from Render config.");
     return;
@@ -275,7 +281,7 @@ async function setBuildInfo() {
 
     const changes = status.length > 0;
 
-    const build = `${sha}${changes ? " (modified)" : ""} (${branch}@${repo})`;
+    const build = `ShitStickSoftware/ProxyGeoBlockV2`;
     process.env.BUILD_INFO = build;
     logger.info({ build, status, changes }, "Got build info from Git.");
   } catch (error: any) {

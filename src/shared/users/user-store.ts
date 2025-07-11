@@ -55,7 +55,14 @@ const migrateTokenCountsProperty = (
       result[family] = { input: 0, output: 0, legacy_total: dbValue };
     } else if (typeof dbValue === 'object' && dbValue !== null && (typeof dbValue.input === 'number' || typeof dbValue.output === 'number')) {
       // Case 2: DB has new object format (might or might not have legacy_total from a previous migration)
-      result[family] = { input: dbValue.input ?? 0, output: dbValue.output ?? 0, legacy_total: dbValue.legacy_total };
+      const migratedCounts: { input: number; output: number; legacy_total?: number } = { 
+        input: dbValue.input ?? 0, 
+        output: dbValue.output ?? 0 
+      };
+      if (dbValue.legacy_total !== undefined) {
+        migratedCounts.legacy_total = dbValue.legacy_total;
+      }
+      result[family] = migratedCounts;
     } else {
       // Case 3: DB value is missing or invalid, use default from config
       if (typeof configValue === 'number') {
@@ -63,7 +70,14 @@ const migrateTokenCountsProperty = (
         result[family] = { input: 0, output: 0, legacy_total: configValue };
       } else if (typeof configValue === 'object' && configValue !== null && (typeof configValue.input === 'number' || typeof configValue.output === 'number')) {
         // Default from config is new object format (e.g., INITIAL_TOKENS[family])
-        result[family] = { input: configValue.input ?? 0, output: configValue.output ?? 0, legacy_total: configValue.legacy_total };
+        const configCounts: { input: number; output: number; legacy_total?: number } = { 
+          input: configValue.input ?? 0, 
+          output: configValue.output ?? 0 
+        };
+        if (configValue.legacy_total !== undefined) {
+          configCounts.legacy_total = configValue.legacy_total;
+        }
+        result[family] = configCounts;
       } else {
         // Ultimate fallback: if configValue is also missing or invalid for this family
         result[family] = { input: 0, output: 0 }; // No legacy_total here
@@ -281,12 +295,17 @@ export function incrementTokenCount(
   const safeInput = Math.max(0, consumption.input);
   const safeOutput = Math.max(0, consumption.output);
   
-  user.tokenCounts[modelFamily] = {
+  const newCounts: { input: number; output: number; legacy_total?: number } = {
     input: (existingCounts.input ?? 0) + safeInput,
-    output: (existingCounts.output ?? 0) + safeOutput,
-    // Preserve legacy_total if it exists
-    legacy_total: existingCounts.legacy_total
+    output: (existingCounts.output ?? 0) + safeOutput
   };
+  
+  // Only include legacy_total if it has a defined value
+  if (existingCounts.legacy_total !== undefined) {
+    newCounts.legacy_total = existingCounts.legacy_total;
+  }
+  
+  user.tokenCounts[modelFamily] = newCounts;
   usersToFlush.add(token);
 }
 
@@ -418,11 +437,17 @@ export function resetUsage(token: string) {
   for (const family of MODEL_FAMILIES) {
     const existing = tokenCounts[family];
     // Preserve legacy_total when resetting usage
-    tokenCounts[family] = { 
+    const resetCounts: { input: number; output: number; legacy_total?: number } = { 
       input: 0, 
-      output: 0, 
-      legacy_total: existing?.legacy_total 
+      output: 0
     };
+    
+    // Only include legacy_total if it has a defined value
+    if (existing?.legacy_total !== undefined) {
+      resetCounts.legacy_total = existing.legacy_total;
+    }
+    
+    tokenCounts[family] = resetCounts;
   }
   usersToFlush.add(token);
 }

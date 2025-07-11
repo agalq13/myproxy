@@ -6,7 +6,7 @@ import { addKey, finalizeBody } from "./middleware/request";
 import { ProxyResHandlerWithBody } from "./middleware/response";
 import axios from "axios";
 import { XaiKey, keyPool } from "../shared/key-management";
-import { isGrokVisionModel, isGrokImageGenModel, isGrokReasoningModel } from "../shared/api-schemas/xai";
+import { isGrokVisionModel, isGrokImageGenModel, isGrokReasoningModel, isGrokReasoningEffortModel, isGrokReasoningContentModel } from "../shared/api-schemas/xai";
 
 let modelsCache: any = null;
 let modelsCacheTime = 0;
@@ -77,14 +77,18 @@ const xaiResponseHandler: ProxyResHandlerWithBody = async (
   // Check if this is a chat completion response with choices
   else if (body.choices && Array.isArray(body.choices) && body.choices.length > 0) {
     // Make sure each choice's message is preserved, especially reasoning_content
-    body.choices.forEach(choice => {
-      if (choice.message && choice.message.reasoning_content) {
-        req.log.debug(
-          { reasoning_length: choice.message.reasoning_content.length },
-          "Grok reasoning content detected"
-        );
-      }
-    });
+    // Only grok-3-mini models return reasoning_content
+    const model = req.body.model;
+    if (isGrokReasoningContentModel(model)) {
+      body.choices.forEach(choice => {
+        if (choice.message && choice.message.reasoning_content) {
+          req.log.debug(
+            { reasoning_length: choice.message.reasoning_content.length },
+            "Grok reasoning content detected"
+          );
+        }
+      });
+    }
   }
 
   res.status(200).json({ ...newBody, proxy: body.proxy });
@@ -236,34 +240,45 @@ function redirectImageRequests(req: Request) {
 function removeUnsupportedParameters(req: Request) {
   const model = req.body.model;
   
-  // Check if this is a grok-3-mini variant that supports reasoning
-  const isGrok3MiniReasoning = isGrokReasoningModel(model);
+  // Check if this is a reasoning model (grok-3-mini or grok-4-0709)
+  const isReasoningModel = isGrokReasoningModel(model);
+  const isReasoningEffortModel = isGrokReasoningEffortModel(model);
   
-  if (isGrok3MiniReasoning) {
-    // List of parameters not supported by Grok-3-mini models
+  if (isReasoningModel) {
+    // List of parameters not supported by reasoning models
     const unsupportedParams = [
       'presence_penalty',
-      'frequency_penalty'
+      'frequency_penalty',
+      'stop'  // stop parameter is not supported by reasoning models
     ];
     
     for (const param of unsupportedParams) {
       if (req.body[param] !== undefined) {
-        req.log.info(`Removing unsupported parameter for Grok-3-mini model: ${param}`);
+        req.log.info(`Removing unsupported parameter for reasoning model ${model}: ${param}`);
         delete req.body[param];
       }
     }
     
-    // Support reasoning_effort parameter
-    if (req.body.reasoning_effort) {
-      // If reasoning_effort is already present in the request, validate it
-      if (!['low', 'medium', 'high'].includes(req.body.reasoning_effort)) {
-        req.log.warn(`Invalid reasoning_effort value: ${req.body.reasoning_effort}, removing it`);
-        delete req.body.reasoning_effort;
+    // Handle reasoning_effort parameter - only supported by grok-3-mini
+    if (isReasoningEffortModel) {
+      // This is grok-3-mini, handle reasoning_effort
+      if (req.body.reasoning_effort) {
+        // If reasoning_effort is already present in the request, validate it
+        if (!['low', 'medium', 'high'].includes(req.body.reasoning_effort)) {
+          req.log.warn(`Invalid reasoning_effort value: ${req.body.reasoning_effort}, removing it`);
+          delete req.body.reasoning_effort;
+        }
+      } else {
+        // Default to low reasoning effort if not specified
+        req.body.reasoning_effort = 'low';
+        req.log.debug(`Setting default reasoning_effort=low for Grok-3-mini model`);
       }
     } else {
-      // Default to low reasoning effort if not specified
-      req.body.reasoning_effort = 'low';
-      req.log.debug(`Setting default reasoning_effort=low for Grok-3-mini model`);
+      // This is grok-4-0709 or other reasoning model that doesn't support reasoning_effort
+      if (req.body.reasoning_effort !== undefined) {
+        req.log.info(`Removing unsupported reasoning_effort parameter for model ${model}`);
+        delete req.body.reasoning_effort;
+      }
     }
   }
   

@@ -73,7 +73,7 @@ export const GoogleAIV1GenerateContentSchema = z
           .int()
           .optional()
           .default(16)
-          .transform((v) => Math.min(v, 65536)),
+          .transform((v) => Math.min(v, 8192)),
         candidateCount: z.literal(1).optional(),
         topP: z.number().min(0).max(1).optional(),
         topK: z.number().min(0).max(500).optional(),

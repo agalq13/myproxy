@@ -47,9 +47,26 @@ export function isGrokImageGenModel(model: string): boolean {
 
 // Helper function to check if a model supports reasoning
 export function isGrokReasoningModel(model: string): boolean {
-  // Currently, only grok-3-mini variants support reasoning
-  // This is more restrictive as reasoning is a specific capability
-  return model.toLowerCase().includes("-mini") && model.toLowerCase().includes("grok-3");
+  // grok-3-mini variants and grok-4-0709 support reasoning
+  const modelLower = model.toLowerCase();
+  return (modelLower.includes("-mini") && modelLower.includes("grok-3")) || 
+         modelLower.includes("grok-4");
+}
+
+// Helper function to check if a model supports reasoning_effort parameter
+export function isGrokReasoningEffortModel(model: string): boolean {
+  // Only grok-3-mini variants support reasoning_effort parameter
+  // grok-4-0709 does NOT support reasoning_effort
+  const modelLower = model.toLowerCase();
+  return modelLower.includes("-mini") && modelLower.includes("grok-3");
+}
+
+// Helper function to check if a model returns reasoning_content
+export function isGrokReasoningContentModel(model: string): boolean {
+  // Only grok-3-mini variants return reasoning_content
+  // grok-4-0709 does NOT return reasoning_content
+  const modelLower = model.toLowerCase();
+  return modelLower.includes("-mini") && modelLower.includes("grok-3");
 }
 
 // Main Grok chat message schema
