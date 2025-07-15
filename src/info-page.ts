@@ -31,6 +31,7 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   cohere: "Cohere",
   deepseek: "Deepseek",
   xai: "Grok",
+  moonshot: "Moonshot",
   turbo: "GPT-4o Mini / 3.5 Turbo",
   gpt4: "GPT-4",
   "gpt4-32k": "GPT-4 32k",

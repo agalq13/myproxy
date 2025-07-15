@@ -267,6 +267,9 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
       case "qwen":
         // No special handling yet
         break;
+      case "moonshot":
+        errorPayload.proxy_note = `The Moonshot API rejected the request. Check the error message for details.`;
+        break;
       default:
         assertNever(service);
     }
@@ -328,6 +331,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         return;
       case "mistral-ai":
       case "gcp":
+      case "moonshot":
         keyPool.disable(req.key!, "revoked");
         errorPayload.proxy_note = `Assigned API key is invalid or revoked, please try again.`;
         return;
@@ -365,6 +369,9 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         case "qwen":
           // Similar handling to OpenAI for rate limits
           await handleOpenAIRateLimitError(req, errorPayload);
+          break;
+        case "moonshot":
+          await handleMoonshotRateLimitError(req, errorPayload);
           break;
       default:
         assertNever(service as never);
@@ -596,6 +603,39 @@ async function handleCohereRateLimitError(
   
   // If we've already retried 3 times, show the error to the user
   errorPayload.proxy_note = "Too many requests to the Cohere API. Please try again later.";
+}
+
+async function handleMoonshotRateLimitError(
+  req: Request,
+  errorPayload: ProxiedErrorPayload
+) {
+  // Mark the current key as rate limited
+  keyPool.markRateLimited(req.key!);
+  
+  // Store the original request attempt count or initialize it
+  req.retryCount = (req.retryCount || 0) + 1;
+  
+  // Only retry up to 3 times with different keys
+  if (req.retryCount <= 3) {
+    try {
+      // Add a small delay before retrying (2-6 seconds for Moonshot)
+      const delayMs = 2000 + Math.floor(Math.random() * 4000);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      
+      // Re-enqueue the request to try with a different key
+      await reenqueueRequest(req);
+      req.log.info({ attempt: req.retryCount }, "Moonshot rate-limited request re-enqueued");
+      throw new RetryableError(`Moonshot rate-limited request re-enqueued (attempt ${req.retryCount}/3).`);
+    } catch (error) {
+      if (error instanceof RetryableError) {
+        throw error; // Rethrow RetryableError to continue the flow
+      }
+      req.log.error({ error }, "Failed to re-enqueue rate-limited Moonshot request");
+    }
+  }
+  
+  // If we've already retried 3 times, show the error to the user
+  errorPayload.proxy_note = "Too many requests to the Moonshot API. Please try again later.";
 }
 
 async function handleOpenAIRateLimitError(

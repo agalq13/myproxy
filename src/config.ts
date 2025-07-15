@@ -59,6 +59,11 @@ type Config = {
    * Comma-delimited list of Qwen API keys.
    */
   qwenKey?: string;
+  /**
+   * Comma-delimited list of Moonshot API keys.
+   */
+  moonshotKey?: string;
+
 
   /**
    * Comma-delimited list of AWS credentials. Each credential item should be a
@@ -468,6 +473,7 @@ export const config: Config = {
   deepseekKey: getEnvWithDefault("DEEPSEEK_KEY", ""),
   xaiKey: getEnvWithDefault("XAI_KEY", ""),
   cohereKey: getEnvWithDefault("COHERE_KEY", ""),
+  moonshotKey: getEnvWithDefault("MOONSHOT_KEY", ""),
   awsCredentials: getEnvWithDefault("AWS_CREDENTIALS", ""),
   gcpCredentials: getEnvWithDefault("GCP_CREDENTIALS", ""),
   azureCredentials: getEnvWithDefault("AZURE_CREDENTIALS", ""),
@@ -775,6 +781,7 @@ export const OMITTED_KEYS = [
   "xaiKey",
   "cohereKey",
   "qwenKey",
+  "moonshotKey",
   "mistralAIKey",
   "awsCredentials",
   "gcpCredentials",

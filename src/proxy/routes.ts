@@ -14,6 +14,7 @@ import { deepseek } from "./deepseek";
 import { xai } from "./xai";
 import { cohere } from "./cohere";
 import { qwen } from "./qwen";
+import { moonshot } from "./moonshot";
 import { sendErrorToClient } from "./middleware/response/error-generator";
 
 const proxyRouter = express.Router();
@@ -57,6 +58,7 @@ proxyRouter.use("/deepseek", addV1, deepseek);
 proxyRouter.use("/xai", addV1, xai);
 proxyRouter.use("/cohere", addV1, cohere);
 proxyRouter.use("/qwen", addV1, qwen);
+proxyRouter.use("/moonshot", addV1, moonshot);
 
 // Redirect browser requests to the homepage.
 proxyRouter.get("*", (req, res, next) => {

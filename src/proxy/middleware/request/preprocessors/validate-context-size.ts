@@ -125,23 +125,30 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 100000;
   } else if (model.match(/^deepseek/)) {
     modelMax = 64000;
+  } else if (model.match(/^kimi-k2/)) {
+    // Kimi K2 models have 131k context window
+    modelMax = 131000;
+  } else if (model.match(/moonshot/)) {
+    // Moonshot models typically have 200k context window
+    modelMax = 200000;
+  } else if (model.match(/command[\w-]*-03-202[0-9]/)) {
+    // Cohere's command-a-03 models have 256k context window
+    modelMax = 256000;
+  } else if (model.match(/command/) || model.match(/cohere/)) {
+    // Default for all other Cohere models
+    modelMax = 128000;
   } else if (model.match(/^grok-4/)) {
     modelMax = 256000;
   } else if (model.match(/^grok/)) {
     modelMax = 128000;
-  } else if (model.match(/command-a-03-202[0-9]/)) {
-    // Cohere's command-a-03 models have 256k context window
-    modelMax = 256000;
-  } else if (model.match(/command[\w-]*-03-202[0-9]/)) {
-    // Other Command models with -03- pattern (including r, r-plus) have 128k context window
-    modelMax = 128000;
-  } else if (model.match(/command/) || model.match(/cohere/)) {
-    // Default for all other Cohere models
-    modelMax = 128000;
   } else if (model.match(/^magistral/)) {
     modelMax = 40000;
   } else if (model.match(/^magistral/)) {
     modelMax = 40000;
+  } else if (model.match(/^moonshot/)) {
+    modelMax = 200000;
+  } else if (model.match(/^kimi-k2/)) {
+    modelMax = 131000;
   } else if (model.match(/tral/)) {
     // catches mistral, mixtral, codestral, mathstral, etc. mistral models have
     // no name convention and wildly different context windows so this is a

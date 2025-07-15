@@ -18,7 +18,8 @@ export type LLMService =
   | "deepseek"
   | "xai"
   | "cohere"
-  | "qwen";
+  | "qwen"
+  | "moonshot";
 
 export type OpenAIModelFamily =
   | "turbo"
@@ -58,6 +59,7 @@ export type DeepseekModelFamily = "deepseek";
 export type XaiModelFamily = "xai";
 export type CohereModelFamily = "cohere";
 export type QwenModelFamily = "qwen";
+export type MoonshotModelFamily = "moonshot";
 
 export type ModelFamily =
   | OpenAIModelFamily
@@ -75,6 +77,7 @@ export type ModelFamily =
 export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   arr: A & ([ModelFamily] extends [A[number]] ? unknown : never)
 ) => arr)([
+  "moonshot",
   "qwen",
   "cohere",
   "xai",
@@ -149,12 +152,14 @@ export const LLM_SERVICES = (<A extends readonly LLMService[]>(
   "deepseek",
   "xai",
   "cohere",
-  "qwen"
+  "qwen",
+  "moonshot"
 ] as const);
 
 export const MODEL_FAMILY_SERVICE: {
   [f in ModelFamily]: LLMService;
 } = {
+  moonshot: "moonshot",
   qwen: "qwen",
   cohere: "cohere",
   xai: "xai",
@@ -404,12 +409,10 @@ export function getModelFamilyForRequest(req: Request): ModelFamily {
       case "openai-image":
         if (req.service === "deepseek") {
           modelFamily = "deepseek";
-        } else {
-          modelFamily = getOpenAIModelFamily(model);
-        }
-        break;
-        if (req.service === "xai") {
+        } else if (req.service === "xai") {
           modelFamily = "xai";
+        } else if (req.service === "moonshot") {
+          modelFamily = "moonshot";
         } else {
           modelFamily = getOpenAIModelFamily(model);
         }

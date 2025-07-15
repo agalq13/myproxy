@@ -64,6 +64,7 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   // Adding placeholders for families in models.ts but not yet priced here.
   "cohere": { input: 0.15, output: 0.60 }, // Updated to Command R
   "qwen": { input: 1.40, output: 2.80 }, // Qwen-plus, as an example
+  "moonshot": { input: 0.6, output: 2.5 }, // Moonshot kimi k2
 };
 
 export function getTokenCostDetailsUsd(model: ModelFamily, inputTokens: number, outputTokens?: number): { inputCost: number, outputCost: number, totalCost: number } {

@@ -105,6 +105,9 @@ export const addKey: ProxyReqMutator = (manager) => {
     case "qwen":
       manager.setHeader("Authorization", `Bearer ${assignedKey.key}`);
       break;
+    case "moonshot":
+      manager.setHeader("Authorization", `Bearer ${assignedKey.key}`);
+      break;
     case "aws":
     case "gcp":
     case "google-ai":

@@ -105,3 +105,4 @@ export { DeepseekKey } from "./deepseek/provider";
 export { XaiKey } from "./xai/provider";
 export { CohereKey } from "./cohere/provider";
 export { QwenKey } from "./qwen/provider";
+export { MoonshotKey } from "./moonshot/provider";

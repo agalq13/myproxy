@@ -9,6 +9,7 @@ import {
   XaiKey,
   CohereKey,
   QwenKey,
+  MoonshotKey,
 } from "./shared/key-management";
 import {
   AnthropicModelFamily,
@@ -27,6 +28,7 @@ import {
   XaiModelFamily,
   CohereModelFamily,
   QwenModelFamily,
+  MoonshotModelFamily,
 } from "./shared/models";
 import { getCostSuffix, getTokenCostUsd, prettyTokens } from "./shared/stats";
 import { getUniqueIps } from "./proxy/rate-limit";
@@ -50,6 +52,8 @@ const keyIsCohereKey = (k: KeyPoolKey): k is CohereKey =>
   k.service === "cohere";
 const keyIsQwenKey = (k: KeyPoolKey): k is QwenKey =>
   k.service === "qwen";
+const keyIsMoonshotKey = (k: KeyPoolKey): k is MoonshotKey =>
+  k.service === "moonshot";
 
 /** Stats aggregated across all keys for a given service. */
 type ServiceAggregate = "keys" | "uncheckedKeys" | "orgs";
@@ -147,7 +151,8 @@ export type ServiceInfo = {
   & { [f in DeepseekModelFamily]?: BaseFamilyInfo }
   & { [f in XaiModelFamily]?: BaseFamilyInfo }
   & { [f in CohereModelFamily]?: BaseFamilyInfo }
-  & { [f in QwenModelFamily]?: BaseFamilyInfo };
+  & { [f in QwenModelFamily]?: BaseFamilyInfo }
+  & { [f in MoonshotModelFamily]?: BaseFamilyInfo };
 
 // https://stackoverflow.com/a/66661477
 // type DeepKeyOf<T> = (
@@ -200,6 +205,9 @@ const SERVICE_ENDPOINTS: { [s in LLMService]: Record<string, string> } = {
   },
   qwen: {
     qwen: `%BASE%/qwen`,
+  },
+  moonshot: {
+    moonshot: `%BASE%/moonshot`,
   },
 };
 
@@ -358,6 +366,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
   addToService("xai__keys", k.service === "xai" ? 1 : 0);
   addToService("cohere__keys", k.service === "cohere" ? 1 : 0);
   addToService("qwen__keys", k.service === "qwen" ? 1 : 0);
+  addToService("moonshot__keys", k.service === "moonshot" ? 1 : 0);
 
   let sumInputTokens = 0;
   let sumOutputTokens = 0;
@@ -521,6 +530,9 @@ function addKeyToAggregates(k: KeyPoolKey) {
     case "qwen":
       k.modelFamilies.forEach(incrementGenericFamilyStats);
       break;
+    case "moonshot":
+      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      break;
     default:
       assertNever(k.service);
   }
@@ -638,6 +650,9 @@ function getInfoForFamily(family: ModelFamily): BaseFamilyInfo {
         info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
         break;
       case "qwen":
+        info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
+        break;
+      case "moonshot":
         info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
         break;
     }

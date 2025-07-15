@@ -17,6 +17,7 @@ import { DeepseekKeyProvider } from "./deepseek/provider";
 import { XaiKeyProvider } from "./xai/provider";
 import { CohereKeyProvider } from "./cohere/provider";
 import { QwenKeyProvider } from "./qwen/provider";
+import { MoonshotKeyProvider } from "./moonshot/provider";
 
 type AllowedPartial = OpenAIKeyUpdate | AnthropicKeyUpdate | Partial<GcpKey>;
 
@@ -38,6 +39,7 @@ export class KeyPool {
     this.keyProviders.push(new XaiKeyProvider());
     this.keyProviders.push(new CohereKeyProvider());
     this.keyProviders.push(new QwenKeyProvider());
+    this.keyProviders.push(new MoonshotKeyProvider());
   }
 
   public init() {
@@ -81,7 +83,8 @@ export class KeyPool {
       service instanceof DeepseekKeyProvider ||
       service instanceof XaiKeyProvider ||
       service instanceof CohereKeyProvider ||
-      service instanceof QwenKeyProvider
+      service instanceof QwenKeyProvider ||
+      service instanceof MoonshotKeyProvider
     ) {
       service.update(key.hash, { isOverQuota: reason === "quota" });
     }
@@ -211,6 +214,8 @@ export class KeyPool {
       return "cohere";
     } else if (model.includes("qwen")) {
       return "qwen";
+    } else if (model.includes("moonshot")) {
+      return "moonshot";
     } else if (model.startsWith("anthropic.claude")) {
       // AWS offers models from a few providers
       // https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
