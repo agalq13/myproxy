@@ -143,12 +143,6 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 128000;
   } else if (model.match(/^magistral/)) {
     modelMax = 40000;
-  } else if (model.match(/^magistral/)) {
-    modelMax = 40000;
-  } else if (model.match(/^moonshot/)) {
-    modelMax = 200000;
-  } else if (model.match(/^kimi-k2/)) {
-    modelMax = 131000;
   } else if (model.match(/tral/)) {
     // catches mistral, mixtral, codestral, mathstral, etc. mistral models have
     // no name convention and wildly different context windows so this is a
