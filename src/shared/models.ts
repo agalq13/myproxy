@@ -72,7 +72,8 @@ export type ModelFamily =
   | DeepseekModelFamily
   | XaiModelFamily
   | CohereModelFamily
-  | QwenModelFamily;
+  | QwenModelFamily
+  | MoonshotModelFamily;
 
 export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   arr: A & ([ModelFamily] extends [A[number]] ? unknown : never)
