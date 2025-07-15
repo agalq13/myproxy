@@ -6,7 +6,7 @@ import { addKey, finalizeBody } from "./middleware/request";
 import { ProxyResHandlerWithBody } from "./middleware/response";
 import axios from "axios";
 import { MoonshotKey, keyPool } from "../shared/key-management";
-import { isMoonshotModel, isMoonshotVisionModel, enableMoonshotPartial, hasMoonshotPartialMode } from "../shared/api-schemas/moonshot";
+import { isMoonshotModel, isMoonshotVisionModel } from "../shared/api-schemas/moonshot";
 import { logger } from "../logger";
 
 const log = logger.child({ module: "proxy", service: "moonshot" });

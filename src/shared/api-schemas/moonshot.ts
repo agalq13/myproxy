@@ -83,24 +83,5 @@ export const MoonshotV1EmbeddingsSchema = z.object({
   encoding_format: z.enum(["float", "base64"]).optional()
 });
 
-// Helper function to enable partial mode for Moonshot (similar to Deepseek's prefill)
-export function enableMoonshotPartial(messages: any[]): any[] {
-  // If the last message is from assistant and doesn't have partial flag, add it
-  if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage.partial) {
-      return [
-        ...messages.slice(0, -1),
-        { ...lastMessage, partial: true }
-      ];
-    }
-  }
-  return messages;
-}
-
-// Helper function to check if request uses partial mode
-export function hasMoonshotPartialMode(messages: any[]): boolean {
-  return messages.length > 0 && 
-         messages[messages.length - 1].role === 'assistant' &&
-         messages[messages.length - 1].partial === true;
-}
+// Note: Partial mode handling is implemented directly in the proxy middleware
+// to follow the Deepseek-style consolidation pattern
