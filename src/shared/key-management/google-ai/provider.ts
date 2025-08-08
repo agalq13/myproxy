@@ -32,6 +32,8 @@ export interface GoogleAIKey extends Key {
   isOverQuota?: boolean;
   /** Model families that are over quota and need to be excluded. */
   overQuotaFamilies?: GoogleAIModelFamily[];
+  /** Whether this key has billing enabled (required for preview models). */
+  billingEnabled?: boolean;
 }
 
 /**
@@ -45,6 +47,13 @@ const RATE_LIMIT_LOCKOUT = 2000;
  * many requests while we wait to learn whether previous ones succeeded.
  */
 const KEY_REUSE_DELAY = 500;
+
+/**
+ * Determines if a model is a preview model that requires billing-enabled keys.
+ */
+function isPreviewModel(model: string): boolean {
+  return model.includes("-preview");
+}
 
 export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
   readonly service = "google-ai";
@@ -84,6 +93,7 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
         tokenUsage: {}, // Initialize new tokenUsage field
         modelIds: [],
         overQuotaFamilies: [],
+        billingEnabled: false, // Will be determined during key checking
       };
       this.keys.push(newKey);
     }
@@ -103,11 +113,23 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
 
   public get(model: string) {
     const neededFamily = getGoogleAIModelFamily(model);
-    const availableKeys = this.keys.filter(
+    let availableKeys = this.keys.filter(
       (k) => !k.isDisabled && k.modelFamilies.includes(neededFamily)
     );
-    if (availableKeys.length === 0) {
-      throw new PaymentRequiredError("No Google AI keys available");
+    
+    // For preview models, only use billing-enabled keys
+    if (isPreviewModel(model)) {
+      availableKeys = availableKeys.filter((k) => k.billingEnabled === true);
+      if (availableKeys.length === 0) {
+        throw new PaymentRequiredError(
+          "No billing-enabled Google AI keys available for preview models"
+        );
+      }
+    } else {
+      // For standard models, use any available key
+      if (availableKeys.length === 0) {
+        throw new PaymentRequiredError("No Google AI keys available");
+      }
     }
 
     const keysByPriority = prioritizeKeys(availableKeys);
@@ -232,3 +254,4 @@ public recheck() {
     key.rateLimitedUntil = Math.max(currentRateLimit, nextRateLimit);
   }
 }
+

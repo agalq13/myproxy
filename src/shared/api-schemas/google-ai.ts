@@ -78,6 +78,9 @@ export const GoogleAIV1GenerateContentSchema = z
         topP: z.number().min(0).max(1).optional(),
         topK: z.number().min(0).max(500).optional(),
         stopSequences: z.array(z.string().max(500)).max(5).optional(),
+        seed: z.number().int().optional(),
+        frequencyPenalty: z.number().optional().default(0),
+        presencePenalty: z.number().optional().default(0),
         thinkingConfig: z.object({
           includeThoughts: z.boolean().optional(),
           thinkingBudget: z.union([
@@ -174,6 +177,9 @@ export const transformOpenAIToGoogleAI: APIFormatTransformer<
       topP: rest.top_p,
       topK: 40,
       temperature: rest.temperature,
+      seed: rest.seed,
+      frequencyPenalty: rest.frequency_penalty,
+      presencePenalty: rest.presence_penalty,
       responseModalities: responseModalities,
       ...(thinkingConfig ? { thinkingConfig } : {})
     },

@@ -15,6 +15,8 @@ const GENERATE_CONTENT_URL =
 const PRO_MODEL_ID = "gemini-2.5-pro";
 const GENERATE_PRO_CONTENT_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${PRO_MODEL_ID}:generateContent?key=%KEY%`;
+const IMAGEN_BILLING_TEST_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=%KEY%";
 
 type ListModelsResponse = {
   models: {
@@ -53,6 +55,8 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
     // Always test flash model access (existing behaviour)
     await this.testGenerateContent(key);
 
+    const billingEnabled = await this.testBillingEnabled(key);
+
     // If key claims to support gemini-pro, perform a second layer test with a pro model.
     let effectiveFamilies = [...provisionedModels];
     if (effectiveFamilies.includes("gemini-pro")) {
@@ -66,10 +70,10 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       }
     }
 
-    const updates = { modelFamilies: effectiveFamilies };
+    const updates = { modelFamilies: effectiveFamilies, billingEnabled };
     this.updateKey(key.hash, updates);
     this.log.info(
-      { key: key.hash, models: effectiveFamilies, ids: key.modelIds?.length },
+      { key: key.hash, models: effectiveFamilies, ids: key.modelIds?.length, billingEnabled },
       "Checked key."
     );
   }
@@ -120,7 +124,7 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       contents: [{ parts: { text: "hi" }, role: "user" }],
       tools: [],
       safetySettings: [],
-      generationConfig: { maxOutputTokens: 1 },
+      generationConfig: { maxOutputTokens: 5 },
     };
     try {
       await axios.post(
@@ -130,6 +134,35 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       );
       return true;
     } catch {
+      return false;
+    }
+  }
+
+  private async testBillingEnabled(key: GoogleAIKey): Promise<boolean> {
+    const payload = {
+      instances: [{ prompt: "" }]
+    };
+    try {
+      const response = await axios.post(
+        IMAGEN_BILLING_TEST_URL.replace("%KEY%", key.key),
+        payload,
+        { validateStatus: () => true } // Accept all status codes
+      );
+      
+      if (response.status === 400) {
+        const errorMessage = response.data?.error?.message || "";
+        // If the error message contains the billing requirement, billing is NOT enabled
+        if (errorMessage.includes("Imagen API is only accessible to billed users at this time")) {
+          return false;
+        }
+        // Other 400 errors indicate billing IS enabled (following Python logic)
+        return true;
+      }
+      
+      // For other status codes, assume no billing (conservative approach)
+      return false;
+    } catch (error: any) {
+      // Network errors or other issues - assume no billing
       return false;
     }
   }
